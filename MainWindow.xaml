@@ -11,40 +11,14 @@
 
     <Window.Resources>
 
-        <Style x:Key="SlideButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#e94560"/>
+        <Style x:Key="StartButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#f5a623"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="20,8"/>
+            <Setter Property="Padding" Value="30,10"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#c73652"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="#555"/>
-                                <Setter Property="Foreground" Value="#aaa"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="StartButtonStyle" TargetType="Button" BasedOn="{StaticResource SlideButtonStyle}">
-            <Setter Property="Background" Value="#f5a623"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="Padding" Value="30,10"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -63,31 +37,54 @@
             </Setter>
         </Style>
 
+        <!-- Pixel-art bevel button used on the nav screen -->
         <Style x:Key="NavButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#0f3460"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Foreground" Value="#f5e6c8"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="10"
-                                Padding="0">
+                        <Grid SnapsToDevicePixels="True" UseLayoutRounding="True">
+                            <!-- 1: outer black frame -->
+                            <Rectangle Fill="Black"/>
+                            <!-- 2: button face -->
+                            <Rectangle x:Name="Face" Fill="#0f3460" Margin="3"/>
+                            <!-- 3a: top highlight strip -->
+                            <Rectangle x:Name="HiTop"   Fill="#3567a8" Margin="3,3,3,0" Height="3" VerticalAlignment="Top"/>
+                            <!-- 3b: left highlight strip -->
+                            <Rectangle x:Name="HiLeft"  Fill="#3567a8" Margin="3,3,0,3" Width="3"  HorizontalAlignment="Left"/>
+                            <!-- 4a: bottom shadow strip -->
+                            <Rectangle x:Name="ShBot"   Fill="#06182f" Margin="3,0,3,3" Height="3" VerticalAlignment="Bottom"/>
+                            <!-- 4b: right shadow strip -->
+                            <Rectangle x:Name="ShRight" Fill="#06182f" Margin="0,3,3,3" Width="3"  HorizontalAlignment="Right"/>
+                            <!-- Content: emoji icon over uppercase label -->
                             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                                 <TextBlock Text="{TemplateBinding Tag}"
-                                           FontSize="28"
+                                           FontFamily="Segoe UI Emoji"
+                                           FontSize="30"
                                            HorizontalAlignment="Center"
                                            Margin="0,0,0,6"/>
                                 <ContentPresenter HorizontalAlignment="Center"/>
                             </StackPanel>
-                        </Border>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#1a4a80"/>
-                              </Trigger>
+                                <Setter TargetName="Face"   Property="Fill" Value="#1a4a80"/>
+                                <Setter TargetName="HiTop"  Property="Fill" Value="#5b9cd6"/>
+                                <Setter TargetName="HiLeft" Property="Fill" Value="#5b9cd6"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="HiTop"   Property="Fill" Value="#06182f"/>
+                                <Setter TargetName="HiLeft"  Property="Fill" Value="#06182f"/>
+                                <Setter TargetName="ShBot"   Property="Fill" Value="#3567a8"/>
+                                <Setter TargetName="ShRight" Property="Fill" Value="#3567a8"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -157,125 +154,195 @@
 
     <Grid>
 
-        <!-- ── SLIDESHOW SCREEN ──────────────────────────────────── -->
-        <Grid x:Name="SlideshowScreen">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <!-- ── LOGO SCREEN ───────────────────────────────────────── -->
+        <Grid x:Name="LogoScreen" Background="Black">
+            <Image x:Name="LogoImage"
+                   Source="assets/carlosLogo.png"
+                   Width="260" Height="260"
+                   Opacity="0"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   RenderTransformOrigin="0.5,0.5">
+                <Image.RenderTransform>
+                    <ScaleTransform x:Name="LogoScale" ScaleX="1" ScaleY="1"/>
+                </Image.RenderTransform>
+                <Image.Effect>
+                    <DropShadowEffect x:Name="LogoGlow"
+                                      Color="#89CFF0"
+                                      BlurRadius="30"
+                                      ShadowDepth="0"
+                                      Opacity="0.6"/>
+                </Image.Effect>
+            </Image>
+            <Grid.Triggers>
+                <EventTrigger RoutedEvent="Grid.Loaded">
+                    <BeginStoryboard>
+                        <Storyboard>
 
-            <Border Grid.Row="0" Margin="40,30,40,10"
-                    Background="#16213e" CornerRadius="12">
-                <Grid>
-                    <Border x:Name="FadeOverlay"
-                            Background="#16213e" CornerRadius="12"
-                            Opacity="0" Panel.ZIndex="10"/>
+                            <!-- Entrance: fade in -->
+                            <DoubleAnimation Storyboard.TargetName="LogoImage"
+                                             Storyboard.TargetProperty="Opacity"
+                                             From="0" To="1" Duration="0:0:0.7">
+                                <DoubleAnimation.EasingFunction>
+                                    <QuadraticEase EasingMode="EaseIn"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
 
-                    <StackPanel VerticalAlignment="Center"
-                                HorizontalAlignment="Center"
-                                Margin="40">
+                            <!-- Entrance: scale slam-in with overshoot -->
+                            <DoubleAnimation Storyboard.TargetName="LogoScale"
+                                             Storyboard.TargetProperty="ScaleX"
+                                             From="1.55" To="1.0" Duration="0:0:0.65"
+                                             FillBehavior="Stop">
+                                <DoubleAnimation.EasingFunction>
+                                    <BackEase Amplitude="0.35" EasingMode="EaseOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="LogoScale"
+                                             Storyboard.TargetProperty="ScaleY"
+                                             From="1.55" To="1.0" Duration="0:0:0.65"
+                                             FillBehavior="Stop">
+                                <DoubleAnimation.EasingFunction>
+                                    <BackEase Amplitude="0.35" EasingMode="EaseOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
 
-                        <Rectangle x:Name="SlideImage"
-                                   Width="200" Height="120"
-                                   RadiusX="8" RadiusY="8"
-                                   Margin="0,0,0,24"
-                                   HorizontalAlignment="Center">
-                            <Rectangle.Fill>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                    <GradientStop Color="#e94560" Offset="0"/>
-                                    <GradientStop Color="#0f3460" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Rectangle.Fill>
-                        </Rectangle>
+                            <!-- Pulse: glow intensity sweep -->
+                            <DoubleAnimation Storyboard.TargetName="LogoGlow"
+                                             Storyboard.TargetProperty="BlurRadius"
+                                             From="15" To="160" Duration="0:0:1.6"
+                                             BeginTime="0:0:0.7"
+                                             AutoReverse="True" RepeatBehavior="Forever">
+                                <DoubleAnimation.EasingFunction>
+                                    <SineEase EasingMode="EaseInOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="LogoGlow"
+                                             Storyboard.TargetProperty="Opacity"
+                                             From="0.15" To="1.0" Duration="0:0:1.6"
+                                             BeginTime="0:0:0.7"
+                                             AutoReverse="True" RepeatBehavior="Forever">
+                                <DoubleAnimation.EasingFunction>
+                                    <SineEase EasingMode="EaseInOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
 
-                        <TextBlock x:Name="SlideIndicator"
-                                   Foreground="#e94560" FontSize="12"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,0,0,8"/>
+                            <!-- Pulse: scale breathing synced with glow -->
+                            <DoubleAnimation Storyboard.TargetName="LogoScale"
+                                             Storyboard.TargetProperty="ScaleX"
+                                             From="1.0" To="1.09" Duration="0:0:1.6"
+                                             BeginTime="0:0:0.7"
+                                             AutoReverse="True" RepeatBehavior="Forever">
+                                <DoubleAnimation.EasingFunction>
+                                    <SineEase EasingMode="EaseInOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="LogoScale"
+                                             Storyboard.TargetProperty="ScaleY"
+                                             From="1.0" To="1.09" Duration="0:0:1.6"
+                                             BeginTime="0:0:0.7"
+                                             AutoReverse="True" RepeatBehavior="Forever">
+                                <DoubleAnimation.EasingFunction>
+                                    <SineEase EasingMode="EaseInOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
 
-                        <TextBlock x:Name="SlideTitle"
-                                   Foreground="White" FontSize="26"
-                                   FontWeight="Bold"
-                                   HorizontalAlignment="Center"
-                                   TextAlignment="Center"
-                                   Margin="0,0,0,16"
-                                   TextWrapping="Wrap"/>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Grid.Triggers>
+        </Grid>
 
-                        <TextBlock x:Name="SlideDescription"
-                                   Foreground="#b0b8d1" FontSize="15"
-                                   HorizontalAlignment="Center"
-                                   TextAlignment="Center"
-                                   TextWrapping="Wrap"
-                                   MaxWidth="500" LineHeight="24"/>
-                    </StackPanel>
-                </Grid>
+        <!-- ── PERRON LOGO SCREEN ────────────────────────────────── -->
+        <Grid x:Name="PerronLogoScreen" Visibility="Collapsed" Background="Black">
+            <Image x:Name="PerronLogoImage"
+                   Source="assets/LogoPerron.png"
+                   Width="360"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   RenderTransformOrigin="0.5,0.5">
+                <Image.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="PerronScale" ScaleX="1" ScaleY="1"/>
+                        <TranslateTransform x:Name="PerronDrop" Y="-600"/>
+                    </TransformGroup>
+                </Image.RenderTransform>
+                <Image.Effect>
+                    <DropShadowEffect x:Name="PerronGlow"
+                                      Color="White"
+                                      BlurRadius="0"
+                                      ShadowDepth="0"
+                                      Opacity="0"/>
+                </Image.Effect>
+            </Image>
+        </Grid>
+
+        <!-- ── SCENE 111 ─────────────────────────────────────────── -->
+        <Grid x:Name="Scene111Screen" Visibility="Collapsed" Background="#1a1a2e">
+            <Image Source="assets/scene111.png"
+                   Stretch="UniformToFill"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch"/>
+            <Rectangle Fill="#33000000"/>
+
+            <Border HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Margin="40,40,40,0"
+                    Padding="22,14"
+                    CornerRadius="10"
+                    BorderThickness="2"
+                    BorderBrush="#7a4a1e">
+                <Border.Background>
+                    <SolidColorBrush Color="#562a00" Opacity="0.78"/>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" BlurRadius="14" Opacity="0.6" ShadowDepth="4"/>
+                </Border.Effect>
+                <TextBlock x:Name="Scene111Text"
+                           Foreground="#f5e6c8"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
             </Border>
-
-            <Grid Grid.Row="1" Margin="40,10,40,24">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <Button x:Name="PrevButton" Grid.Column="0"
-                        Content="← Previous"
-                        Style="{StaticResource SlideButtonStyle}"
-                        Click="PrevButton_Click"/>
-
-                <ItemsControl x:Name="DotIndicators"
-                              Grid.Column="1"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
-
-                <Button x:Name="NextButton" Grid.Column="2"
-                        Content="Next →"
-                        Style="{StaticResource SlideButtonStyle}"
-                        Click="NextButton_Click"/>
-
-                <Button x:Name="StartButton" Grid.Column="2"
-                        Content="⚔ Start Game"
-                        Style="{StaticResource StartButtonStyle}"
-                        Visibility="Collapsed"
-                        Click="StartButton_Click"/>
-            </Grid>
         </Grid>
 
         <!-- ── NAVIGATION SCREEN ────────────────────────────────── -->
-        <Grid x:Name="NavScreen" Visibility="Collapsed">
+        <Grid x:Name="NavScreen" Visibility="Collapsed"
+              UseLayoutRounding="True" SnapsToDevicePixels="True">
+            <Grid.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#1a1a2e" Offset="0"/>
+                    <GradientStop Color="#16213e" Offset="0.5"/>
+                    <GradientStop Color="#0f3460" Offset="1"/>
+                </LinearGradientBrush>
+            </Grid.Background>
+
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Margin="0,28,0,16" HorizontalAlignment="Center">
-                <TextBlock Text="⚔ GalloShowdown"
-                           Foreground="#e94560" FontSize="28" FontWeight="Bold"
-                           HorizontalAlignment="Center"/>
-                <TextBlock Text="Where will you go, champion?"
-                           Foreground="#b0b8d1" FontSize="13"
-                           HorizontalAlignment="Center"
-                           Margin="0,4,0,0"/>
-            </StackPanel>
+            <!-- Logo header -->
+            <Image Grid.Row="0"
+                   Source="assets/LogoPerron.png"
+                   Height="72"
+                   HorizontalAlignment="Center"
+                   Margin="0,14,0,6"
+                   Stretch="Uniform"/>
 
             <UniformGrid Grid.Row="1"
                          Rows="3" Columns="2"
-                         Margin="80,0,80,36"
-                         HorizontalAlignment="Center"
-                         VerticalAlignment="Center">
-                <Button Content="Shop"     Tag="🛒" Style="{StaticResource NavButtonStyle}" Margin="10" Click="NavButton_Click"/>
-                <Button Content="Training" Tag="🥊" Style="{StaticResource NavButtonStyle}" Margin="10" Click="NavButton_Click"/>
-                <Button Content="Housing"  Tag="🏠" Style="{StaticResource NavButtonStyle}" Margin="10" Click="NavButton_Click"/>
-                <Button Content="Battle"   Tag="⚔"  Style="{StaticResource NavButtonStyle}" Margin="10" Click="NavButton_Click"/>
-                <Button Content="Forest"   Tag="🌲" Style="{StaticResource NavButtonStyle}" Margin="10" Click="NavButton_Click"/>
-                <Button Content="Hatchery" Tag="🥚" Style="{StaticResource NavButtonStyle}" Margin="10" Click="NavButton_Click"/>
+                         Margin="60,0,60,30"
+                         HorizontalAlignment="Stretch"
+                         VerticalAlignment="Stretch">
+                <Button Content="SHOP"     Tag="🛒" Style="{StaticResource NavButtonStyle}" Margin="8" Click="NavButton_Click"/>
+                <Button Content="TRAINING" Tag="🥊" Style="{StaticResource NavButtonStyle}" Margin="8" Click="NavButton_Click"/>
+                <Button Content="HOUSING"  Tag="🏠" Style="{StaticResource NavButtonStyle}" Margin="8" Click="NavButton_Click"/>
+                <Button Content="BATTLE"   Tag="⚔"  Style="{StaticResource NavButtonStyle}" Margin="8" Click="NavButton_Click"/>
+                <Button Content="FOREST"   Tag="🌲" Style="{StaticResource NavButtonStyle}" Margin="8" Click="NavButton_Click"/>
+                <Button Content="HATCHERY" Tag="🥚" Style="{StaticResource NavButtonStyle}" Margin="8" Click="NavButton_Click"/>
             </UniformGrid>
         </Grid>
 
@@ -378,11 +445,11 @@
                         <Border.Effect>
                             <DropShadowEffect Color="Black" BlurRadius="20" Opacity="0.5" ShadowDepth="0"/>
                         </Border.Effect>
-                        <TextBlock Text="🐓"
-                                   FontSize="64"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Opacity="0.35"/>
+                        <Image Source="Models/RoosterModel1.png"
+                               Width="170" Height="170"
+                               Stretch="Uniform"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
                     </Border>
                 </Grid>
 
@@ -407,6 +474,119 @@
                         HorizontalAlignment="Left"
                         Margin="10,8,0,10"
                         Click="HousingBack_Click"/>
+            </Grid>
+        </Grid>
+
+        <!-- ── BATTLE SCENE ─────────────────────────────────────── -->
+        <Grid x:Name="BattleScreen" Visibility="Collapsed" Background="#1a1a2e">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Stats bar: P1 HP | Timer | P2 HP -->
+            <Grid Grid.Row="0" Margin="20,12,20,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- P1 -->
+                <StackPanel Grid.Column="0">
+                    <DockPanel>
+                        <TextBlock x:Name="P1Name" Text="Player 1" Foreground="#e94560"
+                                   FontWeight="Bold" FontSize="14"/>
+                        <TextBlock x:Name="P1WinsText" Text="" Foreground="#f5a623"
+                                   FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <Border x:Name="P1HealthBorder" Background="#16213e" CornerRadius="4"
+                            Height="18" Margin="0,4,0,0">
+                        <Rectangle x:Name="P1HealthBar" Fill="#e94560" HorizontalAlignment="Left"/>
+                    </Border>
+                    <TextBlock x:Name="P1Stats" Foreground="#f5a623" FontSize="11" Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <!-- Timer -->
+                <TextBlock Grid.Column="1" x:Name="RoundTimer" Text="99"
+                           Foreground="#f5e6c8" FontSize="32" FontWeight="Bold"
+                           VerticalAlignment="Center" Margin="40,0"/>
+
+                <!-- P2 (mirrored) -->
+                <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                    <DockPanel HorizontalAlignment="Right">
+                        <TextBlock x:Name="P2WinsText" Text="" Foreground="#f5a623"
+                                   FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="P2Name" Text="AI" Foreground="#0f3460"
+                                   FontWeight="Bold" FontSize="14"/>
+                    </DockPanel>
+                    <Border x:Name="P2HealthBorder" Background="#16213e" CornerRadius="4"
+                            Height="18" Margin="0,4,0,0">
+                        <Rectangle x:Name="P2HealthBar" Fill="#0f3460" HorizontalAlignment="Right"/>
+                    </Border>
+                    <TextBlock x:Name="P2Stats" Foreground="#f5a623" FontSize="11"
+                               Margin="0,3,0,0" HorizontalAlignment="Right"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Arena -->
+            <Border Grid.Row="1" Margin="20,4,20,6" CornerRadius="8" ClipToBounds="True">
+                <Grid>
+                    <Image Source="assets/battleBack.png"
+                           Stretch="UniformToFill"
+                           HorizontalAlignment="Stretch"
+                           VerticalAlignment="Stretch"/>
+                    <Canvas x:Name="ArenaCanvas" ClipToBounds="True"/>
+                </Grid>
+            </Border>
+
+            <!-- Back button -->
+            <Button Grid.Row="2" Content="← Back to Menu"
+                    Style="{StaticResource HousingBackButtonStyle}"
+                    HorizontalAlignment="Left" Margin="20,0,0,12"
+                    Click="BattleBack_Click"/>
+
+            <!-- FIGHT! banner -->
+            <TextBlock x:Name="FightBanner" Grid.RowSpan="3"
+                       Visibility="Collapsed" Opacity="0"
+                       Text="FIGHT!"
+                       Foreground="#f5a623" FontSize="52" FontWeight="Bold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Panel.ZIndex="10">
+                <TextBlock.Effect>
+                    <DropShadowEffect Color="Black" BlurRadius="10" Opacity="0.9" ShadowDepth="3"/>
+                </TextBlock.Effect>
+            </TextBlock>
+
+            <!-- KO banner -->
+            <TextBlock x:Name="KOBanner" Grid.RowSpan="3"
+                       Visibility="Collapsed"
+                       Foreground="#e94560" FontSize="48" FontWeight="Bold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Panel.ZIndex="10">
+                <TextBlock.Effect>
+                    <DropShadowEffect Color="Black" BlurRadius="10" Opacity="0.9" ShadowDepth="3"/>
+                </TextBlock.Effect>
+            </TextBlock>
+
+            <!-- Match over overlay -->
+            <Grid x:Name="MatchOverlay" Grid.RowSpan="3"
+                  Visibility="Collapsed" Panel.ZIndex="20"
+                  Background="#BB1a1a2e">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock x:Name="MatchOverlayText"
+                               Foreground="#f5a623" FontSize="36" FontWeight="Bold"
+                               HorizontalAlignment="Center" Margin="0,0,0,24">
+                        <TextBlock.Effect>
+                            <DropShadowEffect Color="Black" BlurRadius="8" Opacity="0.9" ShadowDepth="2"/>
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <Button Content="⚔ Rematch"
+                            Style="{StaticResource StartButtonStyle}"
+                            HorizontalAlignment="Center"
+                            Click="Rematch_Click"/>
+                </StackPanel>
             </Grid>
         </Grid>
 

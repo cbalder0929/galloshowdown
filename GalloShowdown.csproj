@@ -8,4 +8,15 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Resource Include="assets\battleBack.png" />
+    <Resource Include="assets\carlosLogo.png" />
+    <Resource Include="assets\LogoPerron.png" />
+    <Resource Include="assets\scene111.png" />
+    <Resource Include="assets\Housing_Back.png" />
+    <Resource Include="Models\RoosterModel1.png" />
+    <Resource Include="Models\RoosterStrike.png" />
+    <Resource Include="Models\gallo_black.png" />
+  </ItemGroup>
+
 </Project>

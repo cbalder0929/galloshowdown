@@ -1,84 +1,187 @@
-﻿using System.Text;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Windows.Threading;
+using GalloShowdown.Engine;
+using GalloShowdown.Input;
+using GalloShowdown.Models;
 
 namespace GalloShowdown
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
-        private int _currentIndex = 0;
+        // ── Battle state ──────────────────────────────────────────────────────
 
-        private readonly (string Title, string Description)[] _slides =
-        [
-            (
-                "Welcome to GalloShowdown",
-                "In a world where only the strongest roosters survive, legends are born in the arena."
-            ),
-            (
-                "The Rise",
-                "You are a young rooster — underestimated, yet burning with determination to prove your strength."
-            ),
-            (
-                "The Arena",
-                "Fighters from every land gather to battle for honor, glory, and ultimate dominance."
-            ),
-            (
-                "Your Rival",
-                "A fierce champion stands in your path, a warrior known for never once tasting defeat."
-            ),
-            (
-                "The Challenge",
-                "Train hard, fight harder, and rise through the ranks to claim the place you were born for."
-            ),
-            (
-                "Showdown Begins",
-                "Step into the arena. The crowd roars. Your destiny awaits."
-            )
-        ];
+        private BattleEngine? _battle;
+        private readonly HashSet<Key> _pressedKeys = new();
+        private FrameworkElement? _p1Sprite;
+        private FrameworkElement? _p2Sprite;
+        private readonly ScaleTransform _p1Transform = new(1, 1);
+        private readonly ScaleTransform _p2Transform = new(-1, 1);
+        private EventHandler? _renderHandler;
+
+        private readonly BitmapImage _roosterIdle   = new(new Uri("pack://application:,,,/Models/RoosterModel1.png"));
+        private readonly BitmapImage _roosterStrike = new(new Uri("pack://application:,,,/Models/RoosterStrike.png"));
+        private readonly BitmapImage _galloBlack    = new(new Uri("pack://application:,,,/Models/gallo_black.png"));
+        private readonly Stopwatch _stopwatch = new();
+        private TimeSpan _lastFrameTime;
+
+        private int _p1Wins, _p2Wins;
+        private bool _roundActive;
+        private bool _battleInitialized;
+        private bool _roundTransitioning;
+        private DateTime? _koDetectedAt;
+        private double _roundTimeRemaining;
+        private DateTime _p1FlashEnd, _p2FlashEnd;
+
+        private const double GroundOffset = 20.0;
+
+        private static readonly SolidColorBrush P1Fill        = new(Color.FromRgb(0xe9, 0x45, 0x60));
+        private static readonly SolidColorBrush P1StartupFill = new(Color.FromRgb(0xff, 0x80, 0x9a));
+        private static readonly SolidColorBrush P1ActiveFill  = new(Color.FromRgb(0xff, 0xff, 0xff));
+        private static readonly SolidColorBrush P2Fill        = new(Color.FromRgb(0x0f, 0x34, 0x60));
+        private static readonly SolidColorBrush P2StartupFill = new(Color.FromRgb(0x20, 0x60, 0xb0));
+        private static readonly SolidColorBrush P2ActiveFill  = new(Color.FromRgb(0xff, 0xff, 0xff));
+
+        // ── Constructor ───────────────────────────────────────────────────────
 
         public MainWindow()
         {
             InitializeComponent();
-            BuildDotIndicators();
-            UpdateSlide(animate: false);
+            StartLogoTimer();
         }
 
-        // ── Slideshow navigation ──────────────────────────────────────────────
-
-        private void PrevButton_Click(object sender, RoutedEventArgs e)
+        private void StartLogoTimer()
         {
-            if (_currentIndex > 0)
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            timer.Tick += (_, _) =>
             {
-                _currentIndex--;
-                UpdateSlide(animate: true);
-            }
+                timer.Stop();
+                var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(450));
+                fadeOut.Completed += (_, _) =>
+                {
+                    LogoScreen.Visibility = Visibility.Collapsed;
+                    ShowPerronLogo();
+                };
+                LogoScreen.BeginAnimation(OpacityProperty, fadeOut);
+            };
+            timer.Start();
         }
 
-        private void NextButton_Click(object sender, RoutedEventArgs e)
+        private void ShowPerronLogo()
         {
-            if (_currentIndex < _slides.Length - 1)
+            PerronDrop.Y    = -600;
+            PerronScale.ScaleX = 1; PerronScale.ScaleY = 1;
+            PerronGlow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, null);
+            PerronGlow.BeginAnimation(DropShadowEffect.OpacityProperty,    null);
+            PerronGlow.BlurRadius = 0; PerronGlow.Opacity = 0;
+
+            PerronLogoScreen.Opacity    = 1;
+            PerronLogoScreen.Visibility = Visibility.Visible;
+
+            // Phase 1 — fall from sky, accelerating like gravity
+            var drop = new DoubleAnimation(-600, 0, TimeSpan.FromMilliseconds(500))
             {
-                _currentIndex++;
-                UpdateSlide(animate: true);
-            }
+                EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseIn }
+            };
+            drop.Completed += (_, _) =>
+            {
+                // Phase 2 — squash on impact
+                var squashX = new DoubleAnimation(1.0, 1.28, TimeSpan.FromMilliseconds(65));
+                var squashY = new DoubleAnimation(1.0, 0.70, TimeSpan.FromMilliseconds(65));
+
+                // Impact glow flare
+                PerronGlow.BeginAnimation(DropShadowEffect.BlurRadiusProperty,
+                    new DoubleAnimation(0, 90, TimeSpan.FromMilliseconds(65)));
+                PerronGlow.BeginAnimation(DropShadowEffect.OpacityProperty,
+                    new DoubleAnimation(0, 1.0, TimeSpan.FromMilliseconds(65)));
+
+                squashX.Completed += (_, _) =>
+                {
+                    // Phase 3 — elastic snap back to shape
+                    var restoreX = new DoubleAnimation(1.28, 1.0, TimeSpan.FromMilliseconds(420))
+                    {
+                        EasingFunction = new ElasticEase { Oscillations = 2, Springiness = 5, EasingMode = EasingMode.EaseOut }
+                    };
+                    var restoreY = new DoubleAnimation(0.70, 1.0, TimeSpan.FromMilliseconds(420))
+                    {
+                        EasingFunction = new ElasticEase { Oscillations = 2, Springiness = 5, EasingMode = EasingMode.EaseOut }
+                    };
+                    PerronScale.BeginAnimation(ScaleTransform.ScaleXProperty, restoreX);
+                    PerronScale.BeginAnimation(ScaleTransform.ScaleYProperty, restoreY);
+
+                    // Glow settles to a warm ambient level
+                    PerronGlow.BeginAnimation(DropShadowEffect.BlurRadiusProperty,
+                        new DoubleAnimation(90, 22, TimeSpan.FromMilliseconds(700)));
+                    PerronGlow.BeginAnimation(DropShadowEffect.OpacityProperty,
+                        new DoubleAnimation(1.0, 0.55, TimeSpan.FromMilliseconds(700)));
+
+                    // Phase 4 — hold, then fade to slideshow
+                    var hold = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.0) };
+                    hold.Tick += (_, _) =>
+                    {
+                        hold.Stop();
+                        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(500));
+                        fadeOut.Completed += (_, _) =>
+                        {
+                            PerronLogoScreen.Visibility = Visibility.Collapsed;
+                            ShowScene111();
+                        };
+                        PerronLogoScreen.BeginAnimation(OpacityProperty, fadeOut);
+                    };
+                    hold.Start();
+                };
+
+                PerronScale.BeginAnimation(ScaleTransform.ScaleXProperty, squashX);
+                PerronScale.BeginAnimation(ScaleTransform.ScaleYProperty, squashY);
+            };
+
+            PerronDrop.BeginAnimation(TranslateTransform.YProperty, drop);
         }
 
-        private void StartButton_Click(object sender, RoutedEventArgs e)
+        // ── Scene 111: typewriter intro ───────────────────────────────────────
+
+        private const string Scene111FullText =
+            "As a young boy, you always loved watching the Palenque.";
+
+        private void ShowScene111()
         {
-            SlideshowScreen.Visibility = Visibility.Collapsed;
-            NavScreen.Visibility = Visibility.Visible;
+            Scene111Text.Text     = "";
+            Scene111Screen.Opacity    = 1;
+            Scene111Screen.Visibility = Visibility.Visible;
+
+            int charIndex = 0;
+            var typeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(55) };
+            typeTimer.Tick += (_, _) =>
+            {
+                if (charIndex < Scene111FullText.Length)
+                {
+                    Scene111Text.Text += Scene111FullText[charIndex++];
+                    return;
+                }
+                typeTimer.Stop();
+
+                var hold = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+                hold.Tick += (_, _) =>
+                {
+                    hold.Stop();
+                    var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(500));
+                    fadeOut.Completed += (_, _) =>
+                    {
+                        Scene111Screen.Visibility = Visibility.Collapsed;
+                        NavScreen.Visibility = Visibility.Visible;
+                    };
+                    Scene111Screen.BeginAnimation(OpacityProperty, fadeOut);
+                };
+                hold.Start();
+            };
+            typeTimer.Start();
         }
 
         // ── Nav screen ────────────────────────────────────────────────────────
@@ -87,14 +190,22 @@ namespace GalloShowdown
         {
             if (sender is not Button btn) return;
 
-            if (btn.Content?.ToString() == "Housing")
+            string label = btn.Content?.ToString() ?? "";
+
+            if (label == "HOUSING")
             {
                 NavScreen.Visibility = Visibility.Collapsed;
                 HousingScreen.Visibility = Visibility.Visible;
                 return;
             }
 
-            MessageBox.Show($"{btn.Content} coming soon!", "GalloShowdown",
+            if (label == "BATTLE")
+            {
+                StartBattle();
+                return;
+            }
+
+            MessageBox.Show($"{label} coming soon!", "GalloShowdown",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -106,78 +217,328 @@ namespace GalloShowdown
             NavScreen.Visibility = Visibility.Visible;
         }
 
-        // ── Slide rendering ───────────────────────────────────────────────────
+        // ── Battle: entry / exit ──────────────────────────────────────────────
 
-        private void UpdateSlide(bool animate)
+        private void StartBattle()
         {
-            bool isLast = _currentIndex == _slides.Length - 1;
+            _p1Wins = 0;
+            _p2Wins = 0;
+            _battleInitialized = false;
+            _roundTransitioning = false;
+            _roundActive = false;
 
-            PrevButton.IsEnabled = _currentIndex > 0;
-            NextButton.Visibility = isLast ? Visibility.Collapsed : Visibility.Visible;
-            StartButton.Visibility = isLast ? Visibility.Visible : Visibility.Collapsed;
+            KeyDown += Window_KeyDown;
+            KeyUp   += Window_KeyUp;
 
-            UpdateDotIndicators();
+            NavScreen.Visibility    = Visibility.Collapsed;
+            BattleScreen.Visibility = Visibility.Visible;
 
-            if (animate)
-                FadeTransition(ApplySlideContent);
-            else
-                ApplySlideContent();
+            ArenaCanvas.SizeChanged += OnArenaSized;
         }
 
-        private void ApplySlideContent()
+        private void OnArenaSized(object sender, SizeChangedEventArgs e)
         {
-            var (title, description) = _slides[_currentIndex];
-            SlideTitle.Text = title;
-            SlideDescription.Text = description;
-            SlideIndicator.Text = $"SLIDE {_currentIndex + 1} OF {_slides.Length}";
+            if (_battleInitialized || e.NewSize.Width <= 0) return;
+            _battleInitialized = true;
+            ArenaCanvas.SizeChanged -= OnArenaSized;
+            StartRound();
         }
 
-        // ── Dot indicators ────────────────────────────────────────────────────
-
-        private void BuildDotIndicators()
+        private void StartRound()
         {
-            DotIndicators.Items.Clear();
-            for (int i = 0; i < _slides.Length; i++)
+            DetachRenderLoop();
+            ArenaCanvas.Children.Clear();
+
+            MatchOverlay.Visibility = Visibility.Collapsed;
+            KOBanner.Visibility     = Visibility.Collapsed;
+            FightBanner.Visibility  = Visibility.Collapsed;
+            _roundTransitioning     = false;
+            _koDetectedAt           = null;
+            _roundActive            = false;
+            _roundTimeRemaining     = 99.0;
+
+            double arenaW = ArenaCanvas.ActualWidth;
+            double arenaH = ArenaCanvas.ActualHeight;
+
+            var p1 = new Rooster("Red");
+            var p2 = new Rooster("Blue");
+            p1.PlaceAt(100, 0);
+            p2.PlaceAt(arenaW - Fighter.BodyWidth - 100, 0);
+
+            var bindings = new Dictionary<InputCommand, Key>
             {
-                DotIndicators.Items.Add(new Ellipse
-                {
-                    Width = 8,
-                    Height = 8,
-                    Margin = new Thickness(4, 0, 4, 0),
-                    Fill = i == _currentIndex
-                        ? new SolidColorBrush(Color.FromRgb(0xe9, 0x45, 0x60))
-                        : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x77))
-                });
-            }
-        }
-
-        private void UpdateDotIndicators()
-        {
-            for (int i = 0; i < DotIndicators.Items.Count; i++)
-            {
-                if (DotIndicators.Items[i] is Ellipse dot)
-                {
-                    dot.Fill = i == _currentIndex
-                        ? new SolidColorBrush(Color.FromRgb(0xe9, 0x45, 0x60))
-                        : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x77));
-                }
-            }
-        }
-
-        // ── Fade transition ───────────────────────────────────────────────────
-
-        private void FadeTransition(Action midAction)
-        {
-            var fadeIn  = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(120));
-            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(120));
-
-            fadeIn.Completed += (_, _) =>
-            {
-                midAction();
-                FadeOverlay.BeginAnimation(OpacityProperty, fadeOut);
+                [InputCommand.MoveLeft]    = Key.A,
+                [InputCommand.MoveRight]   = Key.D,
+                [InputCommand.Jump]        = Key.W,
+                [InputCommand.Crouch]      = Key.S,
+                [InputCommand.LightAttack] = Key.Left,
+                [InputCommand.HeavyAttack] = Key.Right,
             };
 
-            FadeOverlay.BeginAnimation(OpacityProperty, fadeIn);
+            var p1Input = new KeyboardInputProvider(_pressedKeys, bindings);
+            var p2Input = new AIInputProvider(p2, p1);
+
+            _battle = new BattleEngine(p1, p1Input, p2, p2Input, arenaW);
+            _battle.HitLanded += OnHitLanded;
+
+            // Ground line
+            var groundLine = new Rectangle
+            {
+                Width  = arenaW,
+                Height = 3,
+                Fill   = new SolidColorBrush(Color.FromRgb(0x3a, 0x3a, 0x5e))
+            };
+            Canvas.SetLeft(groundLine, 0);
+            Canvas.SetTop(groundLine, arenaH - GroundOffset - 3);
+            ArenaCanvas.Children.Add(groundLine);
+
+            _p1Sprite = new Image
+            {
+                Width  = Fighter.BodyWidth,
+                Height = Fighter.BodyHeight,
+                Source = _roosterIdle,
+                Stretch = Stretch.Uniform,
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                RenderTransform = _p1Transform
+            };
+            _p1Transform.ScaleX = 1;
+
+            _p2Sprite = new Image
+            {
+                Width  = Fighter.BodyWidth,
+                Height = Fighter.BodyHeight,
+                Source = _galloBlack,
+                Stretch = Stretch.Uniform,
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                RenderTransform = _p2Transform
+            };
+            ArenaCanvas.Children.Add(_p1Sprite);
+            ArenaCanvas.Children.Add(_p2Sprite);
+
+            P1Name.Text  = p1.Name;
+            P2Name.Text  = p2.Name;
+            P1Stats.Text = $"ATK {p1.Attack}  DEF {p1.Defense}  SPD {(int)p1.Speed}";
+            P2Stats.Text = $"ATK {p2.Attack}  DEF {p2.Defense}  SPD {(int)p2.Speed}";
+            UpdateWinsDisplay();
+
+            _stopwatch.Restart();
+            _lastFrameTime = TimeSpan.Zero;
+            _renderHandler = OnRendering;
+            CompositionTarget.Rendering += _renderHandler;
+
+            ShowFightBanner();
         }
+
+        private void BattleBack_Click(object sender, RoutedEventArgs e)
+        {
+            DetachRenderLoop();
+            KeyDown -= Window_KeyDown;
+            KeyUp   -= Window_KeyUp;
+            _pressedKeys.Clear();
+            ArenaCanvas.SizeChanged -= OnArenaSized;
+            ArenaCanvas.Children.Clear();
+            _battle      = null;
+            _p1Sprite    = null;
+            _p2Sprite    = null;
+            MatchOverlay.Visibility = Visibility.Collapsed;
+            KOBanner.Visibility     = Visibility.Collapsed;
+            FightBanner.Visibility  = Visibility.Collapsed;
+            BattleScreen.Visibility = Visibility.Collapsed;
+            NavScreen.Visibility    = Visibility.Visible;
+        }
+
+        private void Rematch_Click(object sender, RoutedEventArgs e)
+        {
+            _p1Wins = 0;
+            _p2Wins = 0;
+            StartRound();
+        }
+
+        // ── Battle: game loop ─────────────────────────────────────────────────
+
+        private void OnRendering(object? sender, EventArgs e)
+        {
+            if (_battle == null) return;
+
+            var now = _stopwatch.Elapsed;
+            double dt = Math.Min((now - _lastFrameTime).TotalSeconds, 0.05);
+            _lastFrameTime = now;
+
+            if (_roundActive && !_battle.RoundOver)
+            {
+                _roundTimeRemaining -= dt;
+                if (_roundTimeRemaining <= 0)
+                {
+                    _roundTimeRemaining = 0;
+                    var timerWinner = _battle.P1.Health >= _battle.P2.Health ? _battle.P1 : _battle.P2;
+                    _battle.ForceRoundOver(timerWinner);
+                }
+                else
+                {
+                    _battle.Tick(dt);
+                }
+            }
+
+            if (_battle.RoundOver && !_roundTransitioning)
+                HandleKO();
+
+            if (_roundTransitioning && _koDetectedAt.HasValue &&
+                (DateTime.Now - _koDetectedAt.Value).TotalSeconds >= 1.5)
+                ProcessRoundEnd();
+
+            RefreshBattleUI();
+        }
+
+        private void HandleKO()
+        {
+            _roundTransitioning = true;
+            _koDetectedAt = DateTime.Now;
+            _roundActive = false;
+
+            if (_battle!.Winner == _battle.P1) _p1Wins++;
+            else if (_battle.Winner == _battle.P2) _p2Wins++;
+
+            string koText = _battle.Winner != null
+                ? $"K.O.! {_battle.Winner.Name} wins!"
+                : "TIME! Draw!";
+            KOBanner.Text       = koText;
+            KOBanner.Visibility = Visibility.Visible;
+
+            UpdateWinsDisplay();
+        }
+
+        private void ProcessRoundEnd()
+        {
+            _koDetectedAt       = null;
+            _roundTransitioning = false;
+            KOBanner.Visibility = Visibility.Collapsed;
+
+            if (_p1Wins >= 2 || _p2Wins >= 2)
+            {
+                DetachRenderLoop();
+                string winnerName = _p1Wins >= 2 ? _battle!.P1.Name : _battle!.P2.Name;
+                MatchOverlayText.Text   = $"{winnerName} wins the match!";
+                MatchOverlay.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                StartRound();
+            }
+        }
+
+        private void DetachRenderLoop()
+        {
+            if (_renderHandler == null) return;
+            CompositionTarget.Rendering -= _renderHandler;
+            _renderHandler = null;
+        }
+
+        // ── Battle: UI refresh ────────────────────────────────────────────────
+
+        private void RefreshBattleUI()
+        {
+            if (_battle == null || _p1Sprite == null || _p2Sprite == null) return;
+
+            double arenaH = ArenaCanvas.ActualHeight;
+
+            // HP bars
+            double w1 = P1HealthBorder.ActualWidth * (_battle.P1.Health / (double)_battle.P1.MaxHealth);
+            double w2 = P2HealthBorder.ActualWidth * (_battle.P2.Health / (double)_battle.P2.MaxHealth);
+            P1HealthBar.Width = Math.Max(0, w1);
+            P2HealthBar.Width = Math.Max(0, w2);
+
+            // Timer
+            RoundTimer.Text = ((int)Math.Ceiling(_roundTimeRemaining)).ToString();
+
+            // Sprites
+            UpdateSprite(_p1Sprite, _battle.P1, arenaH, p1Side: true);
+            UpdateSprite(_p2Sprite, _battle.P2, arenaH, p1Side: false);
+        }
+
+        private void UpdateSprite(FrameworkElement sprite, Fighter f, double arenaH, bool p1Side)
+        {
+            bool crouching = f.State == FighterState.Crouching;
+            double spriteH = crouching ? Fighter.CrouchHeight : Fighter.BodyHeight;
+            sprite.Height  = spriteH;
+            sprite.Width   = Fighter.BodyWidth;
+
+            double canvasY = arenaH - GroundOffset - f.Y - spriteH;
+            Canvas.SetLeft(sprite, f.X);
+            Canvas.SetTop(sprite,  canvasY);
+
+            DateTime now      = DateTime.Now;
+            DateTime flashEnd = p1Side ? _p1FlashEnd : _p2FlashEnd;
+
+            if (sprite is Image img)
+            {
+                if (p1Side)
+                {
+                    _p1Transform.ScaleX = f.Facing > 0 ? 1 : -1;
+                    img.Source = f.State == FighterState.Attacking ? _roosterStrike : _roosterIdle;
+                }
+                else
+                {
+                    _p2Transform.ScaleX = f.Facing > 0 ? 1 : -1;
+                    img.Source = _galloBlack;
+                }
+
+                if (now < flashEnd)           img.Opacity = 0.3;
+                else if (f.IsInStartupFrames) img.Opacity = 0.65;
+                else                          img.Opacity = 1.0;
+            }
+            else if (sprite is Rectangle rect)
+            {
+                if (now < flashEnd || f.IsInActiveFrames) rect.Fill = p1Side ? P1ActiveFill : P2ActiveFill;
+                else if (f.IsInStartupFrames)             rect.Fill = p1Side ? P1StartupFill : P2StartupFill;
+                else                                      rect.Fill = p1Side ? P1Fill : P2Fill;
+            }
+        }
+
+        private void UpdateWinsDisplay()
+        {
+            P1WinsText.Text = new string('●', _p1Wins) + new string('○', Math.Max(0, 2 - _p1Wins));
+            P2WinsText.Text = new string('●', _p2Wins) + new string('○', Math.Max(0, 2 - _p2Wins));
+        }
+
+        // ── Battle: hit flash ─────────────────────────────────────────────────
+
+        private void OnHitLanded(Fighter defender)
+        {
+            if (_battle == null) return;
+            DateTime flashEnd = DateTime.Now.AddMilliseconds(60);
+            if (defender == _battle.P1) _p1FlashEnd = flashEnd;
+            else                        _p2FlashEnd = flashEnd;
+        }
+
+        // ── Battle: banners ───────────────────────────────────────────────────
+
+        private void ShowFightBanner()
+        {
+            FightBanner.Text       = "FIGHT!";
+            FightBanner.Opacity    = 0;
+            FightBanner.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300));
+            fadeIn.Completed += (_, _) =>
+            {
+                var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300))
+                {
+                    BeginTime = TimeSpan.FromMilliseconds(500)
+                };
+                fadeOut.Completed += (_, _) =>
+                {
+                    FightBanner.Visibility = Visibility.Collapsed;
+                    _roundActive = true;
+                };
+                FightBanner.BeginAnimation(OpacityProperty, fadeOut);
+            };
+            FightBanner.BeginAnimation(OpacityProperty, fadeIn);
+        }
+
+        // ── Battle: keyboard ──────────────────────────────────────────────────
+
+        private void Window_KeyDown(object sender, KeyEventArgs e) => _pressedKeys.Add(e.Key);
+        private void Window_KeyUp(object sender, KeyEventArgs e)   => _pressedKeys.Remove(e.Key);
+
     }
 }
