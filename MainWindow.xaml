@@ -358,7 +358,7 @@
             <!-- Darkening overlay -->
             <Rectangle Fill="#55000000"/>
 
-            <!-- Main layout: left sign | center | right sign -->
+            <!-- Main layout: left arrow | center | right arrow -->
             <Grid Margin="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -370,12 +370,14 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- LEFT: Previous sign button -->
-                <Button Grid.Column="0" Grid.Row="0"
+                <!-- LEFT: Prev arrow -->
+                <Button x:Name="HousingPrevButton"
+                        Grid.Column="0" Grid.Row="0"
                         Content="◀&#x0a;Prev"
                         Style="{StaticResource SignButtonStyle}"
                         VerticalAlignment="Center"
-                        Margin="10,0,0,0">
+                        Margin="10,0,0,0"
+                        Click="HousingPrev_Click">
                     <Button.Background>
                         <SolidColorBrush Color="#99562a"/>
                     </Button.Background>
@@ -384,81 +386,102 @@
                     </Button.Effect>
                 </Button>
 
-                <!-- CENTER: Stats sign + rooster area -->
-                <Grid Grid.Column="1" Grid.Row="0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="2*"/>
-                    </Grid.RowDefinitions>
-
-                    <!-- Stats sign panel -->
-                    <Border Grid.Row="0"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Bottom"
-                            MinWidth="320"
-                            Margin="0,24,0,12"
-                            Padding="24,16"
-                            CornerRadius="10"
-                            BorderThickness="4"
-                            BorderBrush="#7a4a1e">
-                        <Border.Background>
-                            <SolidColorBrush Color="#562a00" Opacity="0.78"/>
-                        </Border.Background>
-                        <Border.Effect>
-                            <DropShadowEffect Color="Black" BlurRadius="14" Opacity="0.6" ShadowDepth="5"/>
-                        </Border.Effect>
-                        <StackPanel>
-                            <TextBlock Text="Rooster Stats"
-                                       Foreground="#f5e6c8" FontSize="20" FontWeight="Bold"
-                                       HorizontalAlignment="Center"
-                                       Margin="0,0,0,10"/>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
-                                <TextBlock Text="❤  Health:"  Foreground="#f5e6c8" FontSize="13" Width="100"/>
-                                <TextBlock Text="—"           Foreground="#f5a623" FontSize="13"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
-                                <TextBlock Text="⚔  Attack:"  Foreground="#f5e6c8" FontSize="13" Width="100"/>
-                                <TextBlock Text="—"           Foreground="#f5a623" FontSize="13"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
-                                <TextBlock Text="🛡  Defense:" Foreground="#f5e6c8" FontSize="13" Width="100"/>
-                                <TextBlock Text="—"           Foreground="#f5a623" FontSize="13"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
-                                <TextBlock Text="💨  Speed:"   Foreground="#f5e6c8" FontSize="13" Width="100"/>
-                                <TextBlock Text="—"           Foreground="#f5a623" FontSize="13"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Rooster display area (dirt circle placeholder) -->
-                    <Border Grid.Row="1"
-                            Width="220" Height="220"
-                            CornerRadius="110"
-                            HorizontalAlignment="Center"
+                <!-- CENTER: Rooster image → stats sign → select button -->
+                <StackPanel Grid.Column="1" Grid.Row="0"
                             VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
+
+                    <!-- Dirt-circle portrait -->
+                    <Border Width="200" Height="200"
+                            CornerRadius="100"
+                            HorizontalAlignment="Center"
                             BorderThickness="4"
-                            BorderBrush="#7a5c2e">
+                            BorderBrush="#7a5c2e"
+                            Margin="0,0,0,12">
                         <Border.Background>
                             <SolidColorBrush Color="#8b6340" Opacity="0.45"/>
                         </Border.Background>
                         <Border.Effect>
                             <DropShadowEffect Color="Black" BlurRadius="20" Opacity="0.5" ShadowDepth="0"/>
                         </Border.Effect>
-                        <Image Source="Models/RoosterModel1.png"
-                               Width="170" Height="170"
+                        <Image x:Name="HousingRoosterImage"
+                               Width="155" Height="155"
                                Stretch="Uniform"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"/>
                     </Border>
-                </Grid>
 
-                <!-- RIGHT: Next sign button -->
-                <Button Grid.Column="2" Grid.Row="0"
+                    <!-- Stats sign -->
+                    <Border HorizontalAlignment="Center"
+                            MinWidth="300"
+                            Padding="22,14"
+                            CornerRadius="10"
+                            BorderThickness="4"
+                            BorderBrush="#7a4a1e"
+                            Margin="0,0,0,10">
+                        <Border.Background>
+                            <SolidColorBrush Color="#562a00" Opacity="0.90"/>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect Color="Black" BlurRadius="14" Opacity="0.6" ShadowDepth="5"/>
+                        </Border.Effect>
+                        <StackPanel>
+
+                            <!-- Editable name -->
+                            <TextBox x:Name="HousingNameBox"
+                                     Background="Transparent"
+                                     Foreground="#f5e6c8"
+                                     BorderBrush="#7a4a1e"
+                                     BorderThickness="0,0,0,2"
+                                     CaretBrush="#f5e6c8"
+                                     SelectionBrush="#7a4a1e"
+                                     FontSize="20"
+                                     FontWeight="Bold"
+                                     TextAlignment="Center"
+                                     HorizontalAlignment="Center"
+                                     MinWidth="220"
+                                     Padding="4,2"
+                                     Margin="0,0,0,10"
+                                     LostFocus="HousingNameBox_LostFocus"/>
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
+                                <TextBlock Text="🐓  Breed:"   Foreground="#f5e6c8" FontSize="13" Width="110"/>
+                                <TextBlock x:Name="HousingBreedText"  Foreground="#f5a623" FontSize="13"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
+                                <TextBlock Text="❤  Health:"  Foreground="#f5e6c8" FontSize="13" Width="110"/>
+                                <TextBlock x:Name="HousingHealthText" Foreground="#f5a623" FontSize="13"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
+                                <TextBlock Text="💧  Stamina:" Foreground="#f5e6c8" FontSize="13" Width="110"/>
+                                <TextBlock x:Name="HousingStaminaText" Foreground="#f5a623" FontSize="13"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
+                                <TextBlock Text="💨  Speed:"   Foreground="#f5e6c8" FontSize="13" Width="110"/>
+                                <TextBlock x:Name="HousingSpeedText"  Foreground="#f5a623" FontSize="13"/>
+                            </StackPanel>
+
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Select for battle button -->
+                    <Button x:Name="HousingSelectButton"
+                            Content="Select"
+                            Style="{StaticResource HousingBackButtonStyle}"
+                            HorizontalAlignment="Center"
+                            Padding="30,8"
+                            Click="HousingSelect_Click"/>
+
+                </StackPanel>
+
+                <!-- RIGHT: Next arrow -->
+                <Button x:Name="HousingNextButton"
+                        Grid.Column="2" Grid.Row="0"
                         Content="Next&#x0a;▶"
                         Style="{StaticResource SignButtonStyle}"
                         VerticalAlignment="Center"
-                        Margin="0,0,10,0">
+                        Margin="0,0,10,0"
+                        Click="HousingNext_Click">
                     <Button.Background>
                         <SolidColorBrush Color="#99562a"/>
                     </Button.Background>
@@ -467,7 +490,7 @@
                     </Button.Effect>
                 </Button>
 
-                <!-- Back to menu button -->
+                <!-- Back to menu -->
                 <Button Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1"
                         Content="← Back to Menu"
                         Style="{StaticResource HousingBackButtonStyle}"

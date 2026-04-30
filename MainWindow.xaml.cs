@@ -11,6 +11,7 @@ using System.Windows.Threading;
 using GalloShowdown.Engine;
 using GalloShowdown.Input;
 using GalloShowdown.Models;
+using GalloShowdown.Models.Breeds;
 
 namespace GalloShowdown
 {
@@ -39,6 +40,12 @@ namespace GalloShowdown
         private DateTime? _koDetectedAt;
         private double _roundTimeRemaining;
         private DateTime _p1FlashEnd, _p2FlashEnd;
+
+        // ── Housing state ─────────────────────────────────────────────────────
+
+        private readonly Stable _stable = App.PlayerStable;
+        private BitmapImage? _p1IdleImage;
+        private BitmapImage? _p2IdleImage;
 
         private const double GroundOffset = 20.0;
 
@@ -196,6 +203,7 @@ namespace GalloShowdown
             {
                 NavScreen.Visibility = Visibility.Collapsed;
                 HousingScreen.Visibility = Visibility.Visible;
+                RefreshHousing();
                 return;
             }
 
@@ -210,6 +218,35 @@ namespace GalloShowdown
         }
 
         // ── Housing scene ─────────────────────────────────────────────────────
+
+        private void RefreshHousing()
+        {
+            try
+            {
+                var r = _stable.Current;
+                HousingNameBox.Text        = r.Name;
+                HousingBreedText.Text      = r.BreedName;
+                HousingHealthText.Text     = r.Health.ToString();
+                HousingStaminaText.Text    = r.Stamina.ToString();
+                HousingSpeedText.Text      = r.Speed.ToString();
+                HousingRoosterImage.Source = new BitmapImage(
+                    new Uri($"pack://application:,,,/{r.ImagePath}"));
+                HousingSelectButton.Content   = _stable.CurrentIsSelected ? "Selected ✓" : "Select";
+                HousingSelectButton.IsEnabled = !_stable.CurrentIsSelected;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"RefreshHousing failed:\n\n{ex.GetType().Name}: {ex.Message}\n\n{ex.StackTrace}",
+                    "Housing error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void HousingPrev_Click(object sender, RoutedEventArgs e)   { _stable.Prev();          RefreshHousing(); }
+        private void HousingNext_Click(object sender, RoutedEventArgs e)   { _stable.Next();          RefreshHousing(); }
+        private void HousingSelect_Click(object sender, RoutedEventArgs e) { _stable.SelectCurrent(); RefreshHousing(); }
+
+        private void HousingNameBox_LostFocus(object sender, RoutedEventArgs e)
+            => _stable.Current.Name = HousingNameBox.Text;
 
         private void HousingBack_Click(object sender, RoutedEventArgs e)
         {
@@ -260,10 +297,13 @@ namespace GalloShowdown
             double arenaW = ArenaCanvas.ActualWidth;
             double arenaH = ArenaCanvas.ActualHeight;
 
-            var p1 = new Rooster("Red");
-            var p2 = new Rooster("Blue");
+            var p1 = new RoosterFighter(App.PlayerStable.Selected);
+            var p2 = new RoosterFighter(new BlackRooster());
             p1.PlaceAt(100, 0);
             p2.PlaceAt(arenaW - Fighter.BodyWidth - 100, 0);
+
+            _p1IdleImage = new BitmapImage(new Uri($"pack://application:,,,/{p1.ImagePath}"));
+            _p2IdleImage = new BitmapImage(new Uri($"pack://application:,,,/{p2.ImagePath}"));
 
             var bindings = new Dictionary<InputCommand, Key>
             {
@@ -296,7 +336,7 @@ namespace GalloShowdown
             {
                 Width  = Fighter.BodyWidth,
                 Height = Fighter.BodyHeight,
-                Source = _roosterIdle,
+                Source = _p1IdleImage ?? _roosterIdle,
                 Stretch = Stretch.Uniform,
                 RenderTransformOrigin = new Point(0.5, 0.5),
                 RenderTransform = _p1Transform
@@ -307,7 +347,7 @@ namespace GalloShowdown
             {
                 Width  = Fighter.BodyWidth,
                 Height = Fighter.BodyHeight,
-                Source = _galloBlack,
+                Source = _p2IdleImage ?? _galloBlack,
                 Stretch = Stretch.Uniform,
                 RenderTransformOrigin = new Point(0.5, 0.5),
                 RenderTransform = _p2Transform
@@ -474,12 +514,12 @@ namespace GalloShowdown
                 if (p1Side)
                 {
                     _p1Transform.ScaleX = f.Facing > 0 ? 1 : -1;
-                    img.Source = f.State == FighterState.Attacking ? _roosterStrike : _roosterIdle;
+                    img.Source = f.State == FighterState.Attacking ? _roosterStrike : (_p1IdleImage ?? _roosterIdle);
                 }
                 else
                 {
                     _p2Transform.ScaleX = f.Facing > 0 ? 1 : -1;
-                    img.Source = _galloBlack;
+                    img.Source = _p2IdleImage ?? _galloBlack;
                 }
 
                 if (now < flashEnd)           img.Opacity = 0.3;

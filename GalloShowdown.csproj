@@ -16,7 +16,13 @@
     <Resource Include="assets\Housing_Back.png" />
     <Resource Include="Models\RoosterModel1.png" />
     <Resource Include="Models\RoosterStrike.png" />
+    <Resource Include="Models\gallo_azteca.png" />
     <Resource Include="Models\gallo_black.png" />
+    <Resource Include="Models\gallo_dorado.png" />
+    <Resource Include="Models\gallo_estandard.png" />
+    <Resource Include="Models\gallo_gris.png" />
+    <Resource Include="Models\gallo_guero.png" />
+    <Resource Include="assets\battleArena.png" />
   </ItemGroup>
 
 </Project>

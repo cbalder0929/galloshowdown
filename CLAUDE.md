@@ -54,3 +54,7 @@ Color palette is hardcoded: background `#1a1a2e`, accents `#e94560` (red), `#f5a
 - The Housing sign buttons (`◀ Prev` / `Next ▶`) have no click handlers — presumably reserved for cycling between roosters once a roster exists.
 - All gameplay (combat, stats, progression, hatchery, shop, forest, training) is unimplemented. Nav buttons that say "coming soon" are literal.
 - Window is `ResizeMode="NoResize"` at 820×520 — layouts assume that fixed size.
+
+## Push to this repo
+
+https://github.com/cbalder0929/galloshowdown.git
