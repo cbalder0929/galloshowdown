@@ -308,6 +308,102 @@
             </Border>
         </Grid>
 
+        <!-- ── BIRTHDAY SCENE ───────────────────────────────────── -->
+        <Grid x:Name="BirthdayScreen" Visibility="Collapsed" Background="#1a1a2e">
+            <Image Source="assets/birthday_scene.png"
+                   Stretch="UniformToFill"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch"/>
+            <Rectangle Fill="#33000000"/>
+
+            <Border HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Margin="40,40,40,0"
+                    Padding="22,14"
+                    CornerRadius="10"
+                    BorderThickness="2"
+                    BorderBrush="#7a4a1e">
+                <Border.Background>
+                    <SolidColorBrush Color="#562a00" Opacity="0.78"/>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" BlurRadius="14" Opacity="0.6" ShadowDepth="4"/>
+                </Border.Effect>
+                <TextBlock x:Name="BirthdayText"
+                           Foreground="#f5e6c8"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Border>
+        </Grid>
+
+        <!-- ── GIFTING SCENE ────────────────────────────────────── -->
+        <Grid x:Name="GiftingScreen" Visibility="Collapsed" Background="#1a1a2e">
+            <Image Source="assets/gifting_scene.png"
+                   Stretch="UniformToFill"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch"/>
+            <Rectangle Fill="#33000000"/>
+
+            <Border HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Margin="40,40,40,0"
+                    Padding="22,14"
+                    CornerRadius="10"
+                    BorderThickness="2"
+                    BorderBrush="#7a4a1e">
+                <Border.Background>
+                    <SolidColorBrush Color="#562a00" Opacity="0.78"/>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" BlurRadius="14" Opacity="0.6" ShadowDepth="4"/>
+                </Border.Effect>
+                <TextBlock x:Name="GiftingText"
+                           Foreground="#f5e6c8"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Border>
+        </Grid>
+
+        <!-- ── DREAM SCENE ───────────────────────────────────────── -->
+        <Grid x:Name="DreamScreen" Visibility="Collapsed" Background="#1a1a2e">
+            <Image Source="assets/dream_scene.png"
+                   Stretch="UniformToFill"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch"/>
+            <Rectangle Fill="#33000000"/>
+
+            <Border HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Margin="40,40,40,0"
+                    Padding="22,14"
+                    CornerRadius="10"
+                    BorderThickness="2"
+                    BorderBrush="#7a4a1e">
+                <Border.Background>
+                    <SolidColorBrush Color="#562a00" Opacity="0.78"/>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" BlurRadius="14" Opacity="0.6" ShadowDepth="4"/>
+                </Border.Effect>
+                <TextBlock x:Name="DreamText"
+                           Foreground="#f5e6c8"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Border>
+        </Grid>
+
         <!-- ── NAVIGATION SCREEN ────────────────────────────────── -->
         <Grid x:Name="NavScreen" Visibility="Collapsed"
               UseLayoutRounding="True" SnapsToDevicePixels="True">

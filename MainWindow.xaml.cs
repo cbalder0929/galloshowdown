@@ -27,9 +27,6 @@ namespace GalloShowdown
         private readonly ScaleTransform _p2Transform = new(-1, 1);
         private EventHandler? _renderHandler;
 
-        private readonly BitmapImage _roosterIdle   = new(new Uri("pack://application:,,,/Models/RoosterModel1.png"));
-        private readonly BitmapImage _roosterStrike = new(new Uri("pack://application:,,,/Models/RoosterStrike.png"));
-        private readonly BitmapImage _galloBlack    = new(new Uri("pack://application:,,,/Models/gallo_black.png"));
         private readonly Stopwatch _stopwatch = new();
         private TimeSpan _lastFrameTime;
 
@@ -45,7 +42,11 @@ namespace GalloShowdown
 
         private readonly Stable _stable = App.PlayerStable;
         private BitmapImage? _p1IdleImage;
+        private BitmapImage? _p1LightImage;
+        private BitmapImage? _p1HeavyImage;
         private BitmapImage? _p2IdleImage;
+        private BitmapImage? _p2LightImage;
+        private BitmapImage? _p2HeavyImage;
 
         private const double GroundOffset = 20.0;
 
@@ -155,7 +156,16 @@ namespace GalloShowdown
         // ── Scene 111: typewriter intro ───────────────────────────────────────
 
         private const string Scene111FullText =
-            "As a young boy, you always loved watching the Palenque.";
+            "As a young boy, every weekend I loved watching the  gallos fight at the palenque.";
+
+        private const string BirthdayFullText =
+            "My 10th birthday the day I became a man everything changed.";
+
+        private const string GiftingFullText =
+            "";
+
+        private const string DreamFullText =
+            "";
 
         private void ShowScene111()
         {
@@ -182,9 +192,111 @@ namespace GalloShowdown
                     fadeOut.Completed += (_, _) =>
                     {
                         Scene111Screen.Visibility = Visibility.Collapsed;
-                        NavScreen.Visibility = Visibility.Visible;
+                        ShowBirthdayScene();
                     };
                     Scene111Screen.BeginAnimation(OpacityProperty, fadeOut);
+                };
+                hold.Start();
+            };
+            typeTimer.Start();
+        }
+
+        private void ShowBirthdayScene()
+        {
+            BirthdayText.Text         = "";
+            BirthdayScreen.Opacity    = 1;
+            BirthdayScreen.Visibility = Visibility.Visible;
+
+            int charIndex = 0;
+            var typeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(55) };
+            typeTimer.Tick += (_, _) =>
+            {
+                if (charIndex < BirthdayFullText.Length)
+                {
+                    BirthdayText.Text += BirthdayFullText[charIndex++];
+                    return;
+                }
+                typeTimer.Stop();
+
+                var hold = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+                hold.Tick += (_, _) =>
+                {
+                    hold.Stop();
+                    var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(500));
+                    fadeOut.Completed += (_, _) =>
+                    {
+                        BirthdayScreen.Visibility = Visibility.Collapsed;
+                        ShowGiftingScene();
+                    };
+                    BirthdayScreen.BeginAnimation(OpacityProperty, fadeOut);
+                };
+                hold.Start();
+            };
+            typeTimer.Start();
+        }
+
+        private void ShowGiftingScene()
+        {
+            GiftingText.Text         = "";
+            GiftingScreen.Opacity    = 1;
+            GiftingScreen.Visibility = Visibility.Visible;
+
+            int charIndex = 0;
+            var typeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(55) };
+            typeTimer.Tick += (_, _) =>
+            {
+                if (charIndex < GiftingFullText.Length)
+                {
+                    GiftingText.Text += GiftingFullText[charIndex++];
+                    return;
+                }
+                typeTimer.Stop();
+
+                var hold = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+                hold.Tick += (_, _) =>
+                {
+                    hold.Stop();
+                    var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(500));
+                    fadeOut.Completed += (_, _) =>
+                    {
+                        GiftingScreen.Visibility = Visibility.Collapsed;
+                        ShowDreamScene();
+                    };
+                    GiftingScreen.BeginAnimation(OpacityProperty, fadeOut);
+                };
+                hold.Start();
+            };
+            typeTimer.Start();
+        }
+
+        private void ShowDreamScene()
+        {
+            DreamText.Text         = "";
+            DreamScreen.Opacity    = 1;
+            DreamScreen.Visibility = Visibility.Visible;
+
+            int charIndex = 0;
+            var typeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(55) };
+            typeTimer.Tick += (_, _) =>
+            {
+                if (charIndex < DreamFullText.Length)
+                {
+                    DreamText.Text += DreamFullText[charIndex++];
+                    return;
+                }
+                typeTimer.Stop();
+
+                var hold = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+                hold.Tick += (_, _) =>
+                {
+                    hold.Stop();
+                    var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(500));
+                    fadeOut.Completed += (_, _) =>
+                    {
+                        DreamScreen.Visibility   = Visibility.Collapsed;
+                        NavScreen.Visibility     = Visibility.Visible;
+                    };
+                    DreamScreen.BeginAnimation(OpacityProperty, fadeOut);
                 };
                 hold.Start();
             };
@@ -270,7 +382,15 @@ namespace GalloShowdown
             NavScreen.Visibility    = Visibility.Collapsed;
             BattleScreen.Visibility = Visibility.Visible;
 
-            ArenaCanvas.SizeChanged += OnArenaSized;
+            if (ArenaCanvas.ActualWidth > 0)
+            {
+                _battleInitialized = true;
+                StartRound();
+            }
+            else
+            {
+                ArenaCanvas.SizeChanged += OnArenaSized;
+            }
         }
 
         private void OnArenaSized(object sender, SizeChangedEventArgs e)
@@ -301,9 +421,15 @@ namespace GalloShowdown
             var p2 = new RoosterFighter(new BlackRooster());
             p1.PlaceAt(100, 0);
             p2.PlaceAt(arenaW - Fighter.BodyWidth - 100, 0);
+            p1.FaceTowards(p2.X);
+            p2.FaceTowards(p1.X);
 
-            _p1IdleImage = new BitmapImage(new Uri($"pack://application:,,,/{p1.ImagePath}"));
-            _p2IdleImage = new BitmapImage(new Uri($"pack://application:,,,/{p2.ImagePath}"));
+            _p1IdleImage  = new BitmapImage(new Uri($"pack://application:,,,/{p1.ImagePath}"));
+            _p1LightImage = new BitmapImage(new Uri($"pack://application:,,,/{p1.LightAttackImagePath}"));
+            _p1HeavyImage = new BitmapImage(new Uri($"pack://application:,,,/{p1.HeavyAttackImagePath}"));
+            _p2IdleImage  = new BitmapImage(new Uri($"pack://application:,,,/{p2.ImagePath}"));
+            _p2LightImage = new BitmapImage(new Uri($"pack://application:,,,/{p2.LightAttackImagePath}"));
+            _p2HeavyImage = new BitmapImage(new Uri($"pack://application:,,,/{p2.HeavyAttackImagePath}"));
 
             var bindings = new Dictionary<InputCommand, Key>
             {
@@ -336,7 +462,7 @@ namespace GalloShowdown
             {
                 Width  = Fighter.BodyWidth,
                 Height = Fighter.BodyHeight,
-                Source = _p1IdleImage ?? _roosterIdle,
+                Source = _p1IdleImage,
                 Stretch = Stretch.Uniform,
                 RenderTransformOrigin = new Point(0.5, 0.5),
                 RenderTransform = _p1Transform
@@ -347,7 +473,7 @@ namespace GalloShowdown
             {
                 Width  = Fighter.BodyWidth,
                 Height = Fighter.BodyHeight,
-                Source = _p2IdleImage ?? _galloBlack,
+                Source = _p2IdleImage,
                 Stretch = Stretch.Uniform,
                 RenderTransformOrigin = new Point(0.5, 0.5),
                 RenderTransform = _p2Transform
@@ -513,13 +639,19 @@ namespace GalloShowdown
             {
                 if (p1Side)
                 {
-                    _p1Transform.ScaleX = f.Facing > 0 ? 1 : -1;
-                    img.Source = f.State == FighterState.Attacking ? _roosterStrike : (_p1IdleImage ?? _roosterIdle);
+                    bool heavyP1 = f.CurrentAttack == CurrentAttackType.Heavy;
+                    _p1Transform.ScaleX = (f.Facing > 0 ? 1 : -1) * (heavyP1 ? -1 : 1);
+                    img.Source = f.CurrentAttack == CurrentAttackType.Light ? _p1LightImage
+                               : heavyP1                                    ? _p1HeavyImage
+                               : _p1IdleImage;
                 }
                 else
                 {
-                    _p2Transform.ScaleX = f.Facing > 0 ? 1 : -1;
-                    img.Source = _p2IdleImage ?? _galloBlack;
+                    bool heavyP2 = f.CurrentAttack == CurrentAttackType.Heavy;
+                    _p2Transform.ScaleX = (f.Facing > 0 ? 1 : -1) * (heavyP2 ? -1 : 1);
+                    img.Source = f.CurrentAttack == CurrentAttackType.Light ? _p2LightImage
+                               : heavyP2                                    ? _p2HeavyImage
+                               : _p2IdleImage;
                 }
 
                 if (now < flashEnd)           img.Opacity = 0.3;

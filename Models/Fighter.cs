@@ -4,6 +4,8 @@ using GalloShowdown.Input;
 
 namespace GalloShowdown.Models;
 
+public enum CurrentAttackType { None, Light, Heavy }
+
 public abstract class Fighter
 {
     public const double BodyWidth  = 120;
@@ -29,6 +31,8 @@ public abstract class Fighter
 
     // Prevents the same attack swing from registering multiple hits.
     public bool HasAlreadyHit { get; private set; }
+
+    public CurrentAttackType CurrentAttack { get; private set; }
 
     protected Fighter(string name, int maxHp, int atk, int def, double speed)
     {
@@ -68,7 +72,8 @@ public abstract class Fighter
             if (_frameCounter >= _currentMove!.TotalFrames)
             {
                 State = grounded ? FighterState.Idle : FighterState.Jumping;
-                _currentMove = null;
+                _currentMove  = null;
+                CurrentAttack = CurrentAttackType.None;
                 HasAlreadyHit = false;
             }
             ApplyPhysics(dt, arenaWidth, Gravity);
@@ -85,7 +90,8 @@ public abstract class Fighter
         if ((lightAtk || heavyAtk) &&
             (State == FighterState.Idle || State == FighterState.Walking || State == FighterState.Jumping))
         {
-            _currentMove = lightAtk ? LightMove : HeavyMove;
+            _currentMove  = lightAtk ? LightMove : HeavyMove;
+            CurrentAttack = lightAtk ? CurrentAttackType.Light : CurrentAttackType.Heavy;
             State = FighterState.Attacking;
             _frameCounter = 0;
             _vx = 0;
