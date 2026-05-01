@@ -156,16 +156,16 @@ namespace GalloShowdown
         // ── Scene 111: typewriter intro ───────────────────────────────────────
 
         private const string Scene111FullText =
-            "As a young boy, every weekend I loved watching the  gallos fight at the palenque.";
+            "Ever since I was a young boy I enjoyed watching the gallos fight...";
 
         private const string BirthdayFullText =
-            "My 10th birthday the day I became a man everything changed.";
+            "On my 10th birthday my grandfather payed me a visit...";
 
         private const string GiftingFullText =
-            "";
+            "My abuelo gifted me a rooster of the finest bloodlines...";
 
         private const string DreamFullText =
-            "";
+            " Ever since that moment I have dreamed of training and winning BIG!";
 
         private void ShowScene111()
         {
